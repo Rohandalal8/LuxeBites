@@ -1,1 +1,53 @@
 @import "tailwindcss";
+
+:root {
+	--font-display: Georgia, "Times New Roman", serif;
+}
+
+body {
+	margin: 0;
+}
+
+.font-serif {
+	font-family: var(--font-display);
+}
+
+.auth-input {
+	width: 100%;
+	border: 1px solid #ded7cb;
+	border-radius: 0.75rem;
+	background: #fff;
+	padding: 0.875rem 1rem;
+	color: #28241f;
+	font-size: 0.9375rem;
+	outline: none;
+	transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.auth-input::placeholder {
+	color: #b2aa9f;
+}
+
+.auth-input:focus {
+	border-color: #d97732;
+	box-shadow: 0 0 0 3px rgba(217, 119, 50, 0.14);
+}
+
+.auth-button {
+	display: flex;
+	width: 100%;
+	align-items: center;
+	justify-content: space-between;
+	border-radius: 0.75rem;
+	background: #273b32;
+	padding: 0.875rem 1.125rem;
+	color: #fffaf1;
+	font-size: 0.9375rem;
+	font-weight: 700;
+	transition: background 150ms ease, transform 150ms ease;
+}
+
+.auth-button:hover {
+	background: #1c2d25;
+	transform: translateY(-1px);
+}

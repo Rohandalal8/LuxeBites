@@ -1,36 +1,19 @@
 export default function Register() {
     return (
-        <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-            <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-                <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-                    Register
-                </h1>
-                <div className="w-full max-w-xs mt-6">
-                    <form className="flex flex-col gap-4">
-                        <input
-                            type="text"
-                            placeholder="Username"
-                            className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <input
-                            type="email"
-                            placeholder="Email"
-                            className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <input
-                            type="password"
-                            placeholder="Password"
-                            className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                        <button
-                            type="submit"
-                            className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                            Register
-                        </button>
-                    </form>
-                </div>
-            </main>
-        </div>
+        <form className="space-y-5">
+            <div>
+                <label htmlFor="register-name" className="mb-2 block text-sm font-semibold text-[#4e493f]">Your name</label>
+                <input id="register-name" name="name" type="text" autoComplete="name" placeholder="Alex Morgan" className="auth-input" />
+            </div>
+            <div>
+                <label htmlFor="register-email" className="mb-2 block text-sm font-semibold text-[#4e493f]">Email address</label>
+                <input id="register-email" name="email" type="email" autoComplete="email" placeholder="you@example.com" className="auth-input" />
+            </div>
+            <div>
+                <label htmlFor="register-password" className="mb-2 block text-sm font-semibold text-[#4e493f]">Create a password</label>
+                <input id="register-password" name="password" type="password" autoComplete="new-password" placeholder="At least 8 characters" className="auth-input" />
+            </div>
+            <button type="submit" className="auth-button">Create account <span aria-hidden="true">→</span></button>
+        </form>
     )
 }

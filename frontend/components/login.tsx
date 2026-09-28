@@ -16,5 +16,6 @@ export default function Login() {
             <div className="flex items-center gap-4 py-1 text-xs text-[#a49b8f]"><span className="h-px flex-1 bg-[#e8e1d6]" />or continue with<span className="h-px flex-1 bg-[#e8e1d6]" /></div>
             <button type="button" className="flex w-full items-center justify-center gap-3 rounded-xl border border-[#ded7cb] bg-white px-4 py-3 text-sm font-semibold text-[#4e493f] transition hover:border-[#bfb5a7] hover:bg-[#fcfaf6]"><span className="text-base font-bold text-[#4285f4]">G</span> Continue with Google</button>
         </form>
+        
     )
 }

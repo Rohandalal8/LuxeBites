@@ -82,18 +82,6 @@ function RestaurantDetailPageContent({ params }: { params: { slug: string } }) {
 
   return (
     <main className="min-h-screen bg-[#f7f4ee] text-[#28241f]">
-      <header className="border-b border-[#e8e0d4] bg-[#fffdf9]/95 px-5 py-5 sm:px-8 lg:px-12">
-        <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-5">
-          <Link href="/" className="flex items-center gap-3 text-sm font-bold uppercase tracking-[0.18em] text-[#273b32]">
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f5a524] text-xl tracking-normal text-[#273b32]">L</span>
-            LuxeBites
-          </Link>
-          <Link href="/restaurants" className="rounded-full border border-[#ded7cb] px-4 py-2 text-sm font-bold text-[#273b32] transition hover:border-[#273b32]">
-            Explore more
-          </Link>
-        </div>
-      </header>
-
       <section className="px-5 pb-12 pt-10 sm:px-8 lg:px-12">
         <div className="mx-auto max-w-[1200px] overflow-hidden rounded-[2rem] border border-[#e8e0d4] bg-[#fffdf9] shadow-[0_18px_60px_rgba(40,36,31,0.08)]">
           <div className="grid lg:grid-cols-[1.1fr_0.9fr]">

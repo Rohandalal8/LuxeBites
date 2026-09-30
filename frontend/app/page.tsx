@@ -38,28 +38,6 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen bg-[#f7f4ee] text-[#28241f]">
-      <header className="sticky top-0 z-40 border-b border-[#e8e0d4] bg-[#fffdf9]/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-[1200px] items-center justify-between px-5 py-4 sm:px-8">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f5a524] text-lg font-bold text-[#273b32]">L</div>
-            <div>
-              <div className="text-xs font-bold tracking-[0.18em] text-[#273b32] uppercase">LuxeBites</div>
-            </div>
-          </div>
-
-          <nav className="hidden items-center gap-8 text-sm font-semibold text-[#736a60] md:flex">
-            <Link href="/">Home</Link>
-            <Link href="/restaurants">Restaurants</Link>
-            <Link href="/cart">Cart</Link>
-            <Link href="/login">Login</Link>
-          </nav>
-
-          <Link href="/cart" className="rounded-full bg-[#273b32] px-5 py-2.5 text-sm font-semibold text-[#fffaf1] transition hover:bg-[#1f2d26]">
-            Cart
-          </Link>
-        </div>
-      </header>
-
       <section className="px-5 pb-12 pt-10 sm:px-8 lg:px-12">
         <div className="mx-auto grid max-w-[1200px] items-center gap-8 lg:grid-cols-[1.15fr_0.85fr]">
           <div>

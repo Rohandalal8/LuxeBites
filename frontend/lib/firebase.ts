@@ -1,5 +1,5 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
-import { GoogleAuthProvider, getAuth, signInWithPopup, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "firebase/auth";
+import { GoogleAuthProvider, getAuth, signInWithPopup, signInWithRedirect, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? "",
@@ -27,7 +27,18 @@ export async function signUpWithEmail(email: string, password: string) {
 
 export async function signInWithGoogle() {
   if (!auth || !googleProvider) throw new Error("Firebase is not configured.");
-  return signInWithPopup(auth, googleProvider);
+
+  try {
+    return await signInWithPopup(auth, googleProvider);
+  } catch (error) {
+    const code = (error as { code?: string }).code;
+
+    if (code === "auth/popup-blocked" || code === "auth/popup-closed-by-user") {
+      return signInWithRedirect(auth, googleProvider);
+    }
+
+    throw error;
+  }
 }
 
 export async function logout() {

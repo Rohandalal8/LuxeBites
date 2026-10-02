@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { signInWithEmail, signInWithGoogle } from "@/lib/firebase";
+import { syncFirebaseUser } from "@/lib/api";
 
 export default function Login() {
   const router = useRouter();
@@ -18,7 +19,8 @@ export default function Login() {
     setIsSubmitting(true);
 
     try {
-      await signInWithEmail(email, password);
+      const userCredential = await signInWithEmail(email, password);
+      await syncFirebaseUser(userCredential.user);
       router.push("/");
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Unable to sign in.");
@@ -28,12 +30,29 @@ export default function Login() {
   }
 
   async function handleGoogleLogin() {
+    setIsSubmitting(true);
+
     try {
       setError("");
-      await signInWithGoogle();
-      router.push("/");
+      const userCredential = await signInWithGoogle();
+      if (userCredential) {
+        await syncFirebaseUser(userCredential.user);
+        router.push("/");
+      }
     } catch (submitError) {
-      setError(submitError instanceof Error ? submitError.message : "Google sign-in failed.");
+      const code = (submitError as { code?: string }).code;
+      const messages: Record<string, string> = {
+        "auth/unauthorized-domain": "This website is not authorized in Firebase. Add localhost to Firebase Authentication settings.",
+        "auth/operation-not-allowed": "Google sign-in is disabled. Enable Google under Firebase Authentication providers.",
+        "auth/configuration-not-found": "Firebase Authentication configuration was not found. Check that the web app config belongs to an active Firebase project.",
+        "auth/internal-error": "Firebase Authentication is not configured for this project. Check the Firebase web config and enable Google sign-in.",
+        "auth/popup-closed-by-user": "Google sign-in was cancelled before it finished.",
+        "auth/popup-blocked": "Your browser blocked the Google sign-in window. Please allow popups and try again.",
+      };
+
+      setError(messages[code ?? ""] ?? (submitError instanceof Error ? submitError.message : "Google sign-in failed."));
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -77,8 +96,8 @@ export default function Login() {
         {isSubmitting ? "Signing in..." : "Sign in"} <span aria-hidden="true">→</span>
       </button>
       <div className="flex items-center gap-4 py-1 text-xs text-[#a49b8f]"><span className="h-px flex-1 bg-[#e8e1d6]" />or continue with<span className="h-px flex-1 bg-[#e8e1d6]" /></div>
-      <button type="button" onClick={handleGoogleLogin} className="flex w-full items-center justify-center gap-3 rounded-xl border border-[#ded7cb] bg-white px-4 py-3 text-sm font-semibold text-[#4e493f] transition hover:border-[#bfb5a7] hover:bg-[#fcfaf6]">
-        <span className="text-base font-bold text-[#4285f4]">G</span> Continue with Google
+      <button type="button" onClick={handleGoogleLogin} className="flex w-full items-center justify-center gap-3 rounded-xl border border-[#ded7cb] bg-white px-4 py-3 text-sm font-semibold text-[#4e493f] transition hover:border-[#bfb5a7] hover:bg-[#fcfaf6]" disabled={isSubmitting}>
+        <span className="text-base font-bold text-[#4285f4]">G</span> {isSubmitting ? "Opening Google..." : "Continue with Google"}
       </button>
     </form>
   );

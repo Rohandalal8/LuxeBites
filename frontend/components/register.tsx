@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { signUpWithEmail } from "@/lib/firebase";
+import { signInWithGoogle, signUpWithEmail } from "@/lib/firebase";
+import { syncFirebaseUser } from "@/lib/api";
 
 export default function Register() {
   const router = useRouter();
@@ -20,24 +21,28 @@ export default function Register() {
 
     try {
       const userCredential = await signUpWithEmail(email, password);
-      const token = await userCredential.user.getIdToken();
-
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api"}/auth/sync`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name,
-          email,
-          avatar: userCredential.user.photoURL,
-        }),
-      });
+      await syncFirebaseUser(userCredential.user, name);
 
       router.push("/");
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "Unable to create account.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleGoogleRegister() {
+    setError("");
+    setIsSubmitting(true);
+
+    try {
+      const userCredential = await signInWithGoogle();
+      if (userCredential) {
+        await syncFirebaseUser(userCredential.user);
+        router.push("/");
+      }
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "Unable to create account with Google.");
     } finally {
       setIsSubmitting(false);
     }
@@ -93,6 +98,10 @@ export default function Register() {
 
       <button type="submit" className="auth-button" disabled={isSubmitting}>
         {isSubmitting ? "Creating account..." : "Create account"} <span aria-hidden="true">→</span>
+      </button>
+      <div className="flex items-center gap-4 py-1 text-xs text-[#a49b8f]"><span className="h-px flex-1 bg-[#e8e1d6]" />or continue with<span className="h-px flex-1 bg-[#e8e1d6]" /></div>
+      <button type="button" onClick={handleGoogleRegister} className="flex w-full items-center justify-center gap-3 rounded-xl border border-[#ded7cb] bg-white px-4 py-3 text-sm font-semibold text-[#4e493f] transition hover:border-[#bfb5a7] hover:bg-[#fcfaf6]" disabled={isSubmitting}>
+        <span className="text-base font-bold text-[#4285f4]">G</span> {isSubmitting ? "Opening Google..." : "Continue with Google"}
       </button>
     </form>
   );

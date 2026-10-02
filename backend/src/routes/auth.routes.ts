@@ -47,26 +47,28 @@ router.post("/sync", async (req, res, next) => {
       email: req.body.email ?? decodedToken.email ?? null,
       phone: req.body.phone ?? decodedToken.phone_number ?? null,
       avatar: req.body.avatar ?? decodedToken.picture ?? null,
-      role: "CUSTOMER",
     };
 
-    const existingUser = await prisma.user.findUnique({
+    const existingByFirebaseUid = await prisma.user.findUnique({
       where: { firebaseUid: decodedToken.uid },
     });
+    const existingByEmail = !existingByFirebaseUid && userPayload.email
+      ? await prisma.user.findUnique({ where: { email: userPayload.email } })
+      : null;
+    const existingUser = existingByFirebaseUid ?? existingByEmail;
 
     const user = existingUser
       ? await prisma.user.update({
           where: { id: existingUser.id },
           data: {
+            firebaseUid: userPayload.firebaseUid,
             name: userPayload.name,
             email: userPayload.email,
             phone: userPayload.phone,
             avatar: userPayload.avatar,
           },
         })
-      : await prisma.user.create({
-          data: userPayload,
-        });
+      : await prisma.user.create({ data: userPayload });
 
     return res.status(200).json({ success: true, data: user });
   } catch (error) {

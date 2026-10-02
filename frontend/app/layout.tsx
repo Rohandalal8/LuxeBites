@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import { Navbar } from "@/components/navbar";
+import { Providers } from "./providers";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -17,6 +18,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "LuxeBites | Food worth slowing down for",
   description: "Discover your next favorite meal with LuxeBites.",
+  icons: {
+    icon: "/luxe-bites-mark.svg",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -26,8 +30,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <Navbar />
-        {children}
+        <Providers>
+          <Navbar />
+          {children}
+        </Providers>
       </body>
     </html>
   );

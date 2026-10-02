@@ -4,13 +4,13 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { onAuthStateChanged, type User as FirebaseUser } from "firebase/auth";
 
 import { auth } from "@/lib/firebase";
+import { syncFirebaseUser } from "@/lib/api";
 
 export type AuthUser = {
   id: string;
   email: string | null;
   name: string | null;
   avatar: string | null;
-  role: string;
   firebaseUid: string;
 };
 
@@ -26,41 +26,22 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 const getUserFromFirebase = async (firebaseUser: FirebaseUser | null): Promise<AuthUser | null> => {
   if (!firebaseUser) return null;
 
-  const token = await firebaseUser.getIdToken();
-  const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api"}/auth/sync`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({
-      name: firebaseUser.displayName ?? "Cravio user",
-      email: firebaseUser.email,
-      phone: firebaseUser.phoneNumber,
-      avatar: firebaseUser.photoURL,
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to sync authenticated user.");
-  }
-
-  const data = await response.json();
+  const response = await syncFirebaseUser(firebaseUser);
+  const data = response.data;
 
   return {
-    id: data.data.id,
-    email: data.data.email,
-    name: data.data.name,
-    avatar: data.data.avatar,
-    role: data.data.role,
-    firebaseUid: data.data.firebaseUid,
+    id: data.id,
+    email: data.email,
+    name: data.name,
+    avatar: data.avatar,
+    firebaseUid: data.firebaseUid,
   };
 };
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => Boolean(auth));
 
   const syncSession = async (nextFirebaseUser: FirebaseUser | null) => {
     if (!nextFirebaseUser) {
@@ -82,7 +63,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!auth) {
-      setLoading(false);
       return;
     }
 

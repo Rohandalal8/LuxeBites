@@ -71,8 +71,8 @@ model User {
 
 model Restaurant {
   id             String            @id @default(cuid())
-  ownerId        String
   name           String
+  ownerId        String
   slug           String            @unique
   description    String?
   phone          String?

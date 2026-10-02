@@ -5,7 +5,6 @@ import prisma from "../config/prisma.js";
 
 type AuthenticatedUser = {
   id: string;
-  role: string;
   firebaseUid?: string;
 };
 
@@ -38,7 +37,6 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 
     req.user = {
       id: user.id,
-      role: user.role,
       firebaseUid: user.firebaseUid ?? decodedToken.uid,
     } satisfies AuthenticatedUser;
 
@@ -51,20 +49,4 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       ...(process.env.NODE_ENV !== "production" ? { debug: (error as Error).message } : {}),
     });
   }
-}
-
-export function requireRole(...roles: string[]) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    const currentRole = req.user?.role;
-
-    if (!currentRole || !roles.includes(currentRole)) {
-      return res.status(403).json({
-        success: false,
-        message: "You do not have permission to access this resource.",
-        code: "FORBIDDEN",
-      });
-    }
-
-    return next();
-  };
 }

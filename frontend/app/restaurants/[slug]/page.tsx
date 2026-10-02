@@ -1,24 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
 
 import { CartProvider, useCart } from "@/contexts/cart-context";
 import { fetchRestaurants, type Restaurant } from "@/lib/restaurants";
 
 const menuItems = [
-  { id: "paneer-tikka-bowl", name: "Paneer Tikka Bowl", description: "Smoky paneer, saffron rice, charred greens", price: 349 },
-  { id: "butter-chicken-feast", name: "Butter Chicken Feast", description: "Creamy tomato gravy with soft naan and salad", price: 429 },
-  { id: "crispy-corn-chaat", name: "Crispy Corn Chaat", description: "Tangy, spicy, and fresh with lime and herbs", price: 189 },
-  { id: "mango-lassi", name: "Mango Lassi", description: "Cold, creamy, and poured to order", price: 129 },
-  { id: "dal-makhani", name: "Dal Makhani", description: "Slow-cooked lentils with butter and spice", price: 299 },
-  { id: "chefs-platter", name: "Chef's Platter", description: "A curated mix of house specials for sharing", price: 699 },
+  { id: "paneer-tikka-bowl", name: "Paneer Tikka Bowl", description: "Smoky paneer, saffron rice, charred greens", price: 349, isVeg: true },
+  { id: "butter-chicken-feast", name: "Butter Chicken Feast", description: "Creamy tomato gravy with soft naan and salad", price: 429, isVeg: false },
+  { id: "crispy-corn-chaat", name: "Crispy Corn Chaat", description: "Tangy, spicy, and fresh with lime and herbs", price: 189, isVeg: true },
+  { id: "mango-lassi", name: "Mango Lassi", description: "Cold, creamy, and poured to order", price: 129, isVeg: true },
+  { id: "dal-makhani", name: "Dal Makhani", description: "Slow-cooked lentils with butter and spice", price: 299, isVeg: true },
+  { id: "chefs-platter", name: "Chef's Platter", description: "A curated mix of house specials for sharing", price: 699, isVeg: false },
 ];
 
-function RestaurantDetailPageContent({ params }: { params: { slug: string } }) {
+function RestaurantDetailPageContent({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = use(params);
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [vegOnly, setVegOnly] = useState(false);
+  const [priceSort, setPriceSort] = useState<"none" | "low-to-high" | "high-to-low">("none");
   const { addItem } = useCart();
 
   useEffect(() => {
@@ -27,7 +30,7 @@ function RestaurantDetailPageContent({ params }: { params: { slug: string } }) {
     const loadRestaurant = async () => {
       try {
         const response = await fetchRestaurants();
-        const selected = response.data.find((item) => item.slug === params.slug);
+        const selected = response.data.find((item) => item.slug === slug);
 
         if (active) {
           if (!selected) {
@@ -50,9 +53,22 @@ function RestaurantDetailPageContent({ params }: { params: { slug: string } }) {
     loadRestaurant();
 
     return () => { active = false; };
-  }, [params.slug]);
+  }, [slug]);
 
   const price = useMemo(() => (restaurant ? "$".repeat(Math.max(1, restaurant.priceLevel)) : ""), [restaurant]);
+  const visibleMenuItems = useMemo(() => {
+    const filteredItems = vegOnly ? menuItems.filter((item) => item.isVeg) : [...menuItems];
+
+    if (priceSort === "low-to-high") {
+      return filteredItems.sort((first, second) => first.price - second.price);
+    }
+
+    if (priceSort === "high-to-low") {
+      return filteredItems.sort((first, second) => second.price - first.price);
+    }
+
+    return filteredItems;
+  }, [priceSort, vegOnly]);
 
   if (loading) {
     return (
@@ -128,18 +144,30 @@ function RestaurantDetailPageContent({ params }: { params: { slug: string } }) {
 
       <section className="px-5 pb-14 sm:px-8 lg:px-12">
         <div className="mx-auto max-w-[1200px]">
-          <div className="mb-6 flex items-end justify-between gap-4">
+          <div className="mb-6 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#d97732]">Popular dishes</p>
               <h2 className="mt-2 font-serif text-4xl tracking-[-0.04em] text-[#28241f]">Menu favourites</h2>
             </div>
-            <span className="rounded-full border border-[#ded7cb] bg-[#fffdf9] px-4 py-2 text-sm font-semibold text-[#273b32]">
-              {restaurant.isVegFriendly ? "Veg-friendly" : "Chef specials"}
-            </span>
+            <div className="flex flex-wrap items-center gap-3">
+              <label className="inline-flex items-center gap-2 rounded-full border border-[#ded7cb] bg-[#fffdf9] px-4 py-2 text-sm font-medium text-[#4e493f]">
+                <input type="checkbox" checked={vegOnly} onChange={(event) => setVegOnly(event.target.checked)} />
+                Veg only
+              </label>
+              <label className="flex items-center gap-2 rounded-full border border-[#ded7cb] bg-[#fffdf9] px-4 py-2 text-sm font-medium text-[#4e493f]">
+                <span className="sr-only">Sort menu by price</span>
+                <select value={priceSort} onChange={(event) => setPriceSort(event.target.value as typeof priceSort)} className="bg-transparent outline-none">
+                  <option value="none">Sort by price</option>
+                  <option value="low-to-high">Price: low to high</option>
+                  <option value="high-to-low">Price: high to low</option>
+                </select>
+              </label>
+            </div>
           </div>
 
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {menuItems.map((item) => (
+          {visibleMenuItems.length > 0 ? (
+            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+              {visibleMenuItems.map((item) => (
               <article key={item.id} className="rounded-[1.5rem] border border-[#e7dfd2] bg-[#fffdf9] p-5 shadow-[0_10px_30px_rgba(40,36,31,0.04)]">
                 <div className="flex items-start justify-between gap-4">
                   <div>
@@ -167,15 +195,20 @@ function RestaurantDetailPageContent({ params }: { params: { slug: string } }) {
                   Add to cart
                 </button>
               </article>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-[1.5rem] border border-dashed border-[#d9cdb9] bg-[#fffdf9] p-10 text-center text-sm text-[#665d55]">
+              No vegetarian dishes match the selected filters.
+            </div>
+          )}
         </div>
       </section>
     </main>
   );
 }
 
-export default function RestaurantDetailPage({ params }: { params: { slug: string } }) {
+export default function RestaurantDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   return (
     <CartProvider>
       <RestaurantDetailPageContent params={params} />

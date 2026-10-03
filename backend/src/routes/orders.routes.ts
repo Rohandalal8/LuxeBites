@@ -1,48 +1,80 @@
 import { Router } from "express";
 
+import prisma from "../config/prisma.js";
+import { requireAuth, requireCustomer } from "../middleware/auth.js";
+import { createOrder } from "../services/order.service.js";
+
 const router = Router();
 
-const createOrderNumber = () => `LB-${Date.now().toString().slice(-6)}`;
-
-router.post("/orders", (req, res) => {
-  const items = Array.isArray(req.body?.items) ? req.body.items : [];
-  const customerName = typeof req.body?.customerName === "string" ? req.body.customerName : "Guest";
-  const address = typeof req.body?.address === "string" ? req.body.address : "Delivery address";
-  const restaurantName = typeof req.body?.restaurantName === "string" ? req.body.restaurantName : "LuxeBites Kitchen";
-
-  if (!items.length) {
-    return res.status(400).json({
-      success: false,
-      message: "Cart is empty.",
+router.get("/orders", requireAuth, requireCustomer, async (req, res, next) => {
+  try {
+    const orders = await prisma.order.findMany({
+      where: { userId: req.user!.id },
+      include: { restaurant: true, items: true },
+      orderBy: { createdAt: "desc" },
     });
+
+    res.status(200).json({ success: true, data: orders });
+  } catch (error) {
+    next(error);
   }
+});
 
-  const subtotal = items.reduce((sum: number, item: any) => {
-    const price = Number(item?.price ?? 0);
-    const quantity = Number(item?.quantity ?? 1);
-    return sum + price * quantity;
-  }, 0);
+router.get("/orders/:id", requireAuth, requireCustomer, async (req, res, next) => {
+  try {
+    const orderId = typeof req.params.id === "string" ? req.params.id : req.params.id[0];
+    const order = await prisma.order.findFirst({
+      where: { id: orderId, userId: req.user!.id },
+      include: { restaurant: true, items: true, address: true, payment: true },
+    });
 
-  const deliveryFee = subtotal > 0 ? 49 : 0;
-  const total = subtotal + deliveryFee;
+    if (!order) {
+      res.status(404).json({ success: false, message: "Order not found.", code: "ORDER_NOT_FOUND" });
+      return;
+    }
 
-  const order = {
-    orderNumber: createOrderNumber(),
-    restaurantName,
-    customerName,
-    address,
-    items,
-    subtotal,
-    deliveryFee,
-    total,
-    status: "confirmed",
-    createdAt: new Date().toISOString(),
-  };
+    res.status(200).json({ success: true, data: order });
+  } catch (error) {
+    next(error);
+  }
+});
 
-  return res.status(201).json({
-    success: true,
-    data: order,
-  });
+router.post("/orders", requireAuth, requireCustomer, async (req, res, next) => {
+  try {
+    const items = Array.isArray(req.body?.items)
+      ? req.body.items.map((item: { id?: unknown; quantity?: unknown }) => ({
+          menuItemId: typeof item.id === "string" ? item.id : "",
+          quantity: Number(item.quantity),
+        }))
+      : [];
+    const address = typeof req.body?.address === "string" ? req.body.address.trim() : "";
+
+    if (!address) {
+      res.status(400).json({ success: false, message: "A delivery address is required.", code: "ADDRESS_REQUIRED" });
+      return;
+    }
+
+    const order = await createOrder({ userId: req.user!.id, items, address });
+
+    res.status(201).json({
+      success: true,
+      data: {
+        id: order.id,
+        orderNumber: `LB-${order.id.slice(-6).toUpperCase()}`,
+        restaurantName: order.restaurant.name,
+        items: order.items,
+        subtotal: order.subtotal,
+        deliveryFee: order.deliveryFee,
+        tax: order.tax,
+        total: order.total,
+        status: order.status,
+        paymentStatus: order.paymentStatus,
+        createdAt: order.createdAt,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 export default router;

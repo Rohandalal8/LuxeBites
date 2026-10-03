@@ -1,81 +1,58 @@
-# Cravio
+# Luxebites
 
-Cravio is a premium food discovery and delivery platform built as a real full-stack monorepo using Next.js on the frontend and Express + Prisma + PostgreSQL on the backend.
+Luxebites is a premium food discovery and delivery platform built with Next.js, Express, Prisma, PostgreSQL, and Firebase Authentication.
 
-This repository is intentionally scoped to the Phase 1 foundation so the project starts with a working, production-ready base:
-
-- Next.js + TypeScript + Tailwind
-- Express + TypeScript API
-- Prisma ORM + PostgreSQL connectivity
-- Environment configuration
-- Health-check API
-- Shared monorepo scripts
+The current repository contains the customer application and shared backend foundation. The persistent catalog slice includes Prisma-backed restaurant discovery, restaurant detail, cuisines, menu categories, menu items, and development seed data.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    A[Customer Browser] --> B[Next.js Frontend]
-    B --> C[Express API]
+    A[Customer Browser] --> B[Next.js Customer App]
+    B --> C[Express Luxebites API]
     C --> D[Prisma ORM]
     D --> E[PostgreSQL]
-    C --> F[Firebase Auth Integration]
+    C --> F[Firebase Auth]
 ```
 
 ## Project structure
 
 ```text
-cravio/
-├─ frontend/
-│  ├─ app/
-│  ├─ components/
-│  ├─ lib/
-│  ├─ package.json
-│  └─ .env.example
-├─ backend/
-│  ├─ prisma/
-│  ├─ src/
-│  ├─ package.json
-│  ├─ tsconfig.json
-│  └─ .env.example
+Luxebites/
+├─ frontend/       # customer app, port 3000
+├─ restaurant/     # restaurant operations app, port 3001
+├─ rider/          # rider app, port 3002
+├─ admin/          # admin app, port 3003
+├─ backend/        # single shared API, port 5000
 ├─ package.json
 ├─ README.md
 └─ .gitignore
 ```
 
-## Environment variables
+## Local setup
 
-### Frontend
-
-Create a `.env.local` file in the frontend directory based on `.env.example`.
+Create `.env.local` in `frontend` and `.env` in `backend` from the existing example files.
 
 ```bash
+# frontend/.env.local
 NEXT_PUBLIC_API_URL=http://localhost:5000/api
-NEXT_PUBLIC_FIREBASE_API_KEY=your-firebase-api-key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=1234567890
-NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
+
+# backend/.env
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/luxebites?schema=public"
+PORT=5000
+CLIENT_URL="http://localhost:3001"
+NODE_ENV="development"
 ```
 
-### Backend
-
-Create a `.env` file in the backend directory based on `.env.example`.
+Start the applications:
 
 ```bash
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/cravio?schema=public"
-PORT=5000
-CLIENT_URL="http://localhost:3000"
-NODE_ENV="development"
-FIREBASE_PROJECT_ID="your-project-id"
-FIREBASE_CLIENT_EMAIL="firebase-adminsdk@your-project.iam.gserviceaccount.com"
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYOUR_KEY_HERE\n-----END PRIVATE KEY-----\n"
+cd backend
+npm install
+npx prisma generate
+npm run db:seed
+npm run dev
 ```
-
-## Start the app
-
-### Frontend
 
 ```bash
 cd frontend
@@ -83,37 +60,24 @@ npm install
 npm run dev
 ```
 
-The app will run at: http://localhost:3000
+The customer app runs at `http://localhost:3001`; the API runs at `http://localhost:5000`.
 
-### Backend
+## Catalog API
 
-```bash
-cd backend
-npm install
-npx prisma generate
-npm run dev
-```
+- `GET /api/restaurants` lists active restaurants with search, cuisine, rating, and vegetarian filters.
+- `GET /api/restaurants/:slug` returns a restaurant and its available menu categories and items.
+- `GET /api/health` verifies API availability.
 
-The API will run at: http://localhost:5000
+Checkout, role-based ownership, applications, delivery assignment, and authenticated Socket.IO rooms are implemented on the shared backend. Payment provider integration, notification persistence, and dedicated authentication screens remain deployment work.
 
-## Backend health check
+## Workspace commands
 
 ```bash
-curl http://localhost:5000/api/health
+npm run dev:frontend
+npm run dev:restaurant
+npm run dev:rider
+npm run dev:admin
+npm run dev:backend
 ```
 
-## PostgreSQL setup
-
-1. Install PostgreSQL locally or use a hosted provider such as Neon / Supabase.
-2. Create a database named `cravio`.
-3. Set `DATABASE_URL` in the backend `.env` file.
-4. Run Prisma generation and migrations when ready:
-
-```bash
-cd backend
-npx prisma migrate dev --name init
-```
-
-## Next milestones
-
-The project is currently staged for Phase 1 completion. The next recommended step is Phase 2: Firebase authentication, user sync, protected routes, and the role system.
+Restaurant, rider, and admin dashboards call the shared protected APIs. Set a Firebase ID token in browser local storage under `luxebites-token` while those authentication screens are being completed.

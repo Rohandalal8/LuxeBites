@@ -4,9 +4,11 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { CartProvider, useCart } from "@/contexts/cart-context";
+import { useAuth } from "@/contexts/auth-context";
 
 function CheckoutPageContent() {
   const { items, subtotal, deliveryFee, total, clearCart } = useCart();
+  const { firebaseUser } = useAuth();
   const [customerName, setCustomerName] = useState("Guest user");
   const [address, setAddress] = useState("12 Garden Avenue, Bengaluru");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,15 +36,18 @@ function CheckoutPageContent() {
     setError(null);
 
     try {
+      if (!firebaseUser) {
+        throw new Error("Please sign in before placing an order.");
+      }
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000/api"}/orders`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          Authorization: `Bearer ${await firebaseUser.getIdToken()}`,
         },
         body: JSON.stringify({
-          items,
-          restaurantName: items[0]?.restaurantName ?? "LuxeBites",
-          customerName,
+          items: items.map((item) => ({ id: item.id, quantity: item.quantity })),
           address,
         }),
       });

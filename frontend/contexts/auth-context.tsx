@@ -12,6 +12,8 @@ export type AuthUser = {
   name: string | null;
   avatar: string | null;
   firebaseUid: string;
+  role: "CUSTOMER" | "RESTAURANT_OWNER" | "RIDER" | "ADMIN";
+  status: "ACTIVE" | "SUSPENDED";
 };
 
 type AuthContextValue = {
@@ -35,6 +37,8 @@ const getUserFromFirebase = async (firebaseUser: FirebaseUser | null): Promise<A
     name: data.name,
     avatar: data.avatar,
     firebaseUid: data.firebaseUid,
+    role: data.role,
+    status: data.status,
   };
 };
 

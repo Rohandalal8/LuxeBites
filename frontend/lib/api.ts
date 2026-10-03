@@ -13,6 +13,8 @@ export async function syncFirebaseUser(firebaseUser: FirebaseUser, name?: string
     name: string | null;
     avatar: string | null;
     firebaseUid: string;
+    role: "CUSTOMER" | "RESTAURANT_OWNER" | "RIDER" | "ADMIN";
+    status: "ACTIVE" | "SUSPENDED";
   } }>("/auth/sync", {
     method: "POST",
     headers: {

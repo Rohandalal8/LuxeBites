@@ -4,20 +4,11 @@ import Link from "next/link";
 import { use, useEffect, useMemo, useState } from "react";
 
 import { CartProvider, useCart } from "@/contexts/cart-context";
-import { fetchRestaurants, type Restaurant } from "@/lib/restaurants";
-
-const menuItems = [
-  { id: "paneer-tikka-bowl", name: "Paneer Tikka Bowl", description: "Smoky paneer, saffron rice, charred greens", price: 349, isVeg: true },
-  { id: "butter-chicken-feast", name: "Butter Chicken Feast", description: "Creamy tomato gravy with soft naan and salad", price: 429, isVeg: false },
-  { id: "crispy-corn-chaat", name: "Crispy Corn Chaat", description: "Tangy, spicy, and fresh with lime and herbs", price: 189, isVeg: true },
-  { id: "mango-lassi", name: "Mango Lassi", description: "Cold, creamy, and poured to order", price: 129, isVeg: true },
-  { id: "dal-makhani", name: "Dal Makhani", description: "Slow-cooked lentils with butter and spice", price: 299, isVeg: true },
-  { id: "chefs-platter", name: "Chef's Platter", description: "A curated mix of house specials for sharing", price: 699, isVeg: false },
-];
+import { fetchRestaurant, type RestaurantDetails } from "@/lib/restaurants";
 
 function RestaurantDetailPageContent({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
-  const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
+  const [restaurant, setRestaurant] = useState<RestaurantDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [vegOnly, setVegOnly] = useState(false);
@@ -29,16 +20,10 @@ function RestaurantDetailPageContent({ params }: { params: Promise<{ slug: strin
 
     const loadRestaurant = async () => {
       try {
-        const response = await fetchRestaurants();
-        const selected = response.data.find((item) => item.slug === slug);
+        const response = await fetchRestaurant(slug);
 
         if (active) {
-          if (!selected) {
-            setError("This restaurant could not be found.");
-            setRestaurant(null);
-          } else {
-            setRestaurant(selected);
-          }
+          setRestaurant(response.data);
         }
       } catch (loadError) {
         console.error(loadError);
@@ -57,7 +42,8 @@ function RestaurantDetailPageContent({ params }: { params: Promise<{ slug: strin
 
   const price = useMemo(() => (restaurant ? "$".repeat(Math.max(1, restaurant.priceLevel)) : ""), [restaurant]);
   const visibleMenuItems = useMemo(() => {
-    const filteredItems = vegOnly ? menuItems.filter((item) => item.isVeg) : [...menuItems];
+    const items = restaurant?.categories.flatMap((category) => category.items) ?? [];
+    const filteredItems = vegOnly ? items.filter((item) => item.isVeg) : [...items];
 
     if (priceSort === "low-to-high") {
       return filteredItems.sort((first, second) => first.price - second.price);
@@ -68,7 +54,7 @@ function RestaurantDetailPageContent({ params }: { params: Promise<{ slug: strin
     }
 
     return filteredItems;
-  }, [priceSort, vegOnly]);
+  }, [priceSort, restaurant?.categories, vegOnly]);
 
   if (loading) {
     return (

@@ -4,14 +4,23 @@
   "version": "1.0.0",
   "workspaces": [
     "frontend",
-    "backend"
+    "backend",
+    "restaurant",
+    "rider",
+    "admin"
   ],
   "scripts": {
     "dev": "concurrently -n frontend,backend -c cyan,magenta \"npm run dev:frontend\" \"npm run dev:backend\"",
     "dev:frontend": "cd frontend && npm run dev",
     "dev:backend": "cd backend && npm run dev",
+    "dev:restaurant": "cd restaurant && npm run dev",
+    "dev:rider": "cd rider && npm run dev",
+    "dev:admin": "cd admin && npm run dev",
     "build:frontend": "cd frontend && npm run build",
     "build:backend": "cd backend && npm run build",
+    "build:restaurant": "cd restaurant && npm run build",
+    "build:rider": "cd rider && npm run build",
+    "build:admin": "cd admin && npm run build",
     "lint:frontend": "cd frontend && npm run lint",
     "prisma:generate": "cd backend && npm run prisma:generate"
   },

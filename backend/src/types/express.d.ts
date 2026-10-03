@@ -4,6 +4,8 @@ declare global {
       user?: {
         id: string;
         firebaseUid?: string;
+        role: "CUSTOMER" | "RESTAURANT_OWNER" | "RIDER" | "ADMIN";
+        status: "ACTIVE" | "SUSPENDED";
       };
     }
   }

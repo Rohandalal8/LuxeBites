@@ -1,6 +1,12 @@
+import { createServer } from "node:http";
+
 import app from "./app.js";
 import { env } from "./config/env.js";
 import prisma from "./config/prisma.js";
+import { createSocketServer } from "./sockets/socket.js";
+
+const httpServer = createServer(app);
+createSocketServer(httpServer);
 
 async function startServer() {
   try {
@@ -13,8 +19,8 @@ async function startServer() {
     );
   }
 
-  app.listen(env.PORT, () => {
-    console.log(`Cravio API is running on http://localhost:${env.PORT}`);
+  httpServer.listen(env.PORT, () => {
+    console.log(`Luxebites API is running on http://localhost:${env.PORT}`);
   });
 }
 

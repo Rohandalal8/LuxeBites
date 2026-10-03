@@ -33,20 +33,19 @@ const CART_STORAGE_KEY = "luxe-bites-cart";
 const CartContext = createContext<CartContextValue | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
+  const [items, setItems] = useState<CartItem[]>(() => {
+    if (typeof window === "undefined") return [];
 
-  useEffect(() => {
     const storedCart = window.localStorage.getItem(CART_STORAGE_KEY);
+    if (!storedCart) return [];
 
-    if (storedCart) {
-      try {
-        setItems(JSON.parse(storedCart) as CartItem[]);
-      } catch (error) {
-        console.error("Failed to restore cart:", error);
-        setItems([]);
-      }
+    try {
+      return JSON.parse(storedCart) as CartItem[];
+    } catch (error) {
+      console.error("Failed to restore cart:", error);
+      return [];
     }
-  }, []);
+  });
 
   useEffect(() => {
     window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));

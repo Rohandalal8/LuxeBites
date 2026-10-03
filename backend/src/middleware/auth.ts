@@ -2,10 +2,13 @@ import type { NextFunction, Request, Response } from "express";
 
 import admin from "../config/firebase.js";
 import prisma from "../config/prisma.js";
+import type { UserRole } from "@prisma/client";
 
 type AuthenticatedUser = {
   id: string;
   firebaseUid?: string;
+  role: UserRole;
+  status: "ACTIVE" | "SUSPENDED";
 };
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
@@ -35,9 +38,19 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       });
     }
 
+    if (user.status === "SUSPENDED") {
+      return res.status(403).json({
+        success: false,
+        message: "This account is suspended.",
+        code: "ACCOUNT_SUSPENDED",
+      });
+    }
+
     req.user = {
       id: user.id,
       firebaseUid: user.firebaseUid ?? decodedToken.uid,
+      role: user.role,
+      status: user.status,
     } satisfies AuthenticatedUser;
 
     return next();
@@ -50,3 +63,22 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     });
   }
 }
+
+export function requireRole(...roles: UserRole[]) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return res.status(403).json({
+        success: false,
+        message: "You do not have permission to perform this action.",
+        code: "FORBIDDEN",
+      });
+    }
+
+    return next();
+  };
+}
+
+export const requireCustomer = requireRole("CUSTOMER");
+export const requireRestaurantOwner = requireRole("RESTAURANT_OWNER");
+export const requireRider = requireRole("RIDER");
+export const requireAdmin = requireRole("ADMIN");

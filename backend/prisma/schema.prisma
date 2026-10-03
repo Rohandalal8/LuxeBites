@@ -9,8 +9,14 @@ datasource db {
 
 enum UserRole {
   CUSTOMER
-  OWNER
+  RESTAURANT_OWNER
+  RIDER
   ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
 }
 
 enum DayOfWeek {
@@ -45,6 +51,27 @@ enum CouponDiscountType {
   FIXED
 }
 
+enum VehicleType {
+  BIKE
+  SCOOTER
+  CAR
+}
+
+enum DeliveryTaskStatus {
+  SEARCHING_RIDER
+  RIDER_ASSIGNED
+  PICKED_UP
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 model User {
   id         String   @id @default(cuid())
   firebaseUid String? @unique
@@ -53,6 +80,7 @@ model User {
   phone      String?
   avatar     String?
   role       UserRole @default(CUSTOMER)
+  status     UserStatus @default(ACTIVE)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -64,6 +92,9 @@ model User {
   favorites   Favorite[]
   couponsUsed CouponUsage[]
   notifications Notification[]
+  rider        Rider?
+  restaurantApplications RestaurantApplication[]
+  riderApplication RiderApplication?
 
   @@index([firebaseUid])
   @@index([email])
@@ -104,6 +135,8 @@ model Restaurant {
   reviews        Review[]
   orders         Order[]
   notifications  Notification[]
+  payouts        RestaurantPayout[]
+  application    RestaurantApplication?
 
   @@index([ownerId])
   @@index([city])
@@ -265,6 +298,7 @@ model Order {
   items OrderItem[]
   payment Payment?
   notifications Notification[]
+  deliveryTask DeliveryTask?
 
   @@index([userId])
   @@index([restaurantId])
@@ -302,6 +336,113 @@ model Payment {
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
+}
+
+model Rider {
+  id               String      @id @default(cuid())
+  userId           String      @unique
+  vehicleType      VehicleType
+  vehicleNumber    String
+  licenseNumber    String
+  isOnline         Boolean     @default(false)
+  isAvailable      Boolean     @default(false)
+  currentLatitude  Float?
+  currentLongitude Float?
+  rating           Float       @default(0)
+  totalDeliveries  Int         @default(0)
+  totalEarnings    Float       @default(0)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks    DeliveryTask[]
+  earnings RiderEarning[]
+
+  @@index([isOnline, isAvailable])
+}
+
+model DeliveryTask {
+  id               String             @id @default(cuid())
+  orderId          String             @unique
+  riderId          String?
+  status           DeliveryTaskStatus @default(SEARCHING_RIDER)
+  pickupLatitude   Float?
+  pickupLongitude  Float?
+  deliveryLatitude Float?
+  deliveryLongitude Float?
+  assignedAt       DateTime?
+  pickedUpAt       DateTime?
+  deliveredAt      DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  rider Rider? @relation(fields: [riderId], references: [id], onDelete: SetNull)
+
+  @@index([riderId, status])
+  @@index([status])
+}
+
+model RestaurantPayout {
+  id           String   @id @default(cuid())
+  restaurantId String
+  amount       Float
+  status       String   @default("PENDING")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+
+  @@index([restaurantId, createdAt])
+}
+
+model RiderEarning {
+  id             String   @id @default(cuid())
+  riderId        String
+  deliveryTaskId String   @unique
+  amount         Float
+  createdAt      DateTime @default(now())
+
+  rider Rider @relation(fields: [riderId], references: [id], onDelete: Cascade)
+
+  @@index([riderId, createdAt])
+}
+
+model RestaurantApplication {
+  id           String            @id @default(cuid())
+  applicantId  String
+  restaurantId String?           @unique
+  name         String
+  phone        String
+  email        String
+  address      String
+  status       ApplicationStatus @default(PENDING)
+  notes        String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  applicant User        @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  restaurant Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: SetNull)
+
+  @@index([applicantId, status])
+}
+
+model RiderApplication {
+  id            String            @id @default(cuid())
+  applicantId   String            @unique
+  vehicleType   VehicleType
+  vehicleNumber String
+  licenseNumber String
+  phone         String
+  address       String
+  status        ApplicationStatus @default(PENDING)
+  notes         String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  applicant User @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+
+  @@index([status])
 }
 
 model Review {

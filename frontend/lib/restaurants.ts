@@ -22,6 +22,21 @@ export type RestaurantsResponse = {
   data: Restaurant[];
 };
 
+export type RestaurantDetails = Restaurant & {
+  categories: Array<{
+    id: string;
+    name: string;
+    items: Array<{
+      id: string;
+      name: string;
+      description: string;
+      price: number;
+      isVeg: boolean;
+      image: string | null;
+    }>;
+  }>;
+};
+
 export async function fetchRestaurants(params: Record<string, string | number | boolean | undefined> = {}) {
   const query = new URLSearchParams();
 
@@ -32,4 +47,8 @@ export async function fetchRestaurants(params: Record<string, string | number | 
 
   const endpoint = query.toString() ? `/restaurants?${query.toString()}` : "/restaurants";
   return apiFetch<RestaurantsResponse>(endpoint);
+}
+
+export async function fetchRestaurant(slug: string) {
+  return apiFetch<{ success: boolean; data: RestaurantDetails }>(`/restaurants/${encodeURIComponent(slug)}`);
 }

@@ -25,7 +25,7 @@ export function Navbar() {
     <header className="sticky top-0 z-40 border-b border-[#e8e0d4] bg-[#fffdf9]/95 backdrop-blur-md">
       <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-5 px-5 py-4 sm:px-8 lg:px-12">
         <Link href="/" className="flex shrink-0 items-center gap-3 text-sm font-bold tracking-[0.16em] text-[#273b32] uppercase">
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f5a524] text-xl tracking-normal">L</span>
+          <img src="/luxe-bites-admin-mark.svg" alt="" className="h-10 w-10 rounded-xl" />
           <span className="hidden sm:inline">LuxeBites</span>
         </Link>
 

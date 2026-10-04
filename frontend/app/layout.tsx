@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   title: "LuxeBites | Food worth slowing down for",
   description: "Discover your next favorite meal with LuxeBites.",
   icons: {
-    icon: "/luxe-bites-mark.svg",
+    icon: "/luxe-bites-admin-mark.svg",
   },
 };
 

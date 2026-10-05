@@ -12,6 +12,95 @@ const transitions: Partial<Record<OrderStatus, OrderStatus[]>> = {
   PREPARING: [OrderStatus.READY],
 };
 
+async function ownedRestaurant(ownerId: string) {
+  return prisma.restaurant.findFirst({
+    where: { ownerId },
+    include: { menuItems: { orderBy: { createdAt: "desc" } } },
+  });
+}
+
+router.get("/profile", requireAuth, requireRestaurantOwner, async (req, res, next) => {
+  try {
+    const restaurant = await ownedRestaurant(req.user!.id);
+    if (!restaurant) {
+      res.status(404).json({ success: false, message: "No restaurant is linked to this owner.", code: "RESTAURANT_NOT_FOUND" });
+      return;
+    }
+    res.status(200).json({ success: true, data: restaurant });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch("/profile", requireAuth, requireRestaurantOwner, async (req, res, next) => {
+  try {
+    const restaurant = await prisma.restaurant.findFirst({ where: { ownerId: req.user!.id } });
+    if (!restaurant) {
+      res.status(404).json({ success: false, message: "No restaurant is linked to this owner.", code: "RESTAURANT_NOT_FOUND" });
+      return;
+    }
+    const allowed = ["name", "description", "phone", "email", "address", "city", "state", "pincode", "deliveryTime", "minimumOrder", "isOpen"] as const;
+    const data = Object.fromEntries(allowed.filter((key) => req.body?.[key] !== undefined).map((key) => [key, req.body[key]]));
+    const updated = await prisma.restaurant.update({ where: { id: restaurant.id }, data });
+    res.status(200).json({ success: true, data: updated });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/reviews", requireAuth, requireRestaurantOwner, async (req, res, next) => {
+  try {
+    const reviews = await prisma.review.findMany({
+      where: { restaurant: { ownerId: req.user!.id } },
+      include: { user: { select: { name: true, avatar: true } } },
+      orderBy: { createdAt: "desc" },
+    });
+    res.status(200).json({ success: true, data: reviews });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/analytics", requireAuth, requireRestaurantOwner, async (req, res, next) => {
+  try {
+    const restaurant = await prisma.restaurant.findFirst({ where: { ownerId: req.user!.id }, select: { id: true, rating: true, reviewCount: true } });
+    if (!restaurant) {
+      res.status(404).json({ success: false, message: "No restaurant is linked to this owner.", code: "RESTAURANT_NOT_FOUND" });
+      return;
+    }
+    const [orders, revenue, popularItems] = await Promise.all([
+      prisma.order.count({ where: { restaurantId: restaurant.id } }),
+      prisma.order.aggregate({ where: { restaurantId: restaurant.id, status: { not: OrderStatus.CANCELLED } }, _sum: { total: true } }),
+      prisma.orderItem.groupBy({ by: ["menuItemId", "name"], where: { order: { restaurantId: restaurant.id } }, _sum: { quantity: true, subtotal: true }, orderBy: { _sum: { quantity: "desc" } }, take: 5 }),
+    ]);
+    res.status(200).json({ success: true, data: { orders, revenue: revenue._sum.total ?? 0, rating: restaurant.rating, reviewCount: restaurant.reviewCount, popularItems } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get("/notifications", requireAuth, requireRestaurantOwner, async (req, res, next) => {
+  try {
+    const notifications = await prisma.notification.findMany({
+      where: { restaurant: { ownerId: req.user!.id } },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    });
+    res.status(200).json({ success: true, data: notifications });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch("/notifications/read-all", requireAuth, requireRestaurantOwner, async (req, res, next) => {
+  try {
+    await prisma.notification.updateMany({ where: { restaurant: { ownerId: req.user!.id }, isRead: false }, data: { isRead: true } });
+    res.status(204).send();
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post("/apply", requireAuth, requireCustomer, async (req, res, next) => {
   try {
     const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";

@@ -29,6 +29,11 @@ export function createSocketServer(httpServer: HttpServer) {
   io.on("connection", (socket) => {
     const userId = socket.data.userId as string;
     socket.join(`user:${userId}`);
+    if (socket.data.role === "RIDER") {
+      void prisma.rider.findUnique({ where: { userId }, select: { id: true } }).then((rider) => {
+        if (rider) socket.join(`rider:${rider.id}`);
+      });
+    }
 
     socket.on("subscribe-order", async (orderId: unknown) => {
       if (typeof orderId !== "string") return;

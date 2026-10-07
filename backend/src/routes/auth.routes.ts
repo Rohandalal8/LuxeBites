@@ -10,6 +10,7 @@ router.get("/me", requireAuth, async (req, res, next) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user!.id },
+      include: { roleAssignments: { select: { role: true } } },
     });
 
     if (!user) {
@@ -20,7 +21,8 @@ router.get("/me", requireAuth, async (req, res, next) => {
       });
     }
 
-    return res.status(200).json({ success: true, data: user });
+    const roles = Array.from(new Set([user.role, ...user.roleAssignments.map((assignment) => assignment.role)]));
+    return res.status(200).json({ success: true, data: { ...user, roles } });
   } catch (error) {
     return next(error);
   }
@@ -91,7 +93,12 @@ router.post("/sync", async (req, res, next) => {
         })
       : await prisma.user.create({ data: userPayload });
 
-    return res.status(200).json({ success: true, data: user });
+    const assignments = await prisma.userRoleAssignment.findMany({
+      where: { userId: user.id },
+      select: { role: true },
+    });
+    const roles = Array.from(new Set([user.role, ...assignments.map((assignment) => assignment.role)]));
+    return res.status(200).json({ success: true, data: { ...user, roles } });
   } catch (error) {
     return next(error);
   }

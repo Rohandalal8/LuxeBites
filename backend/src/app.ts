@@ -8,8 +8,10 @@ import { env } from "./config/env.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import authRoutes from "./routes/auth.routes.js";
 import adminRoutes from "./routes/admin.routes.js";
+import applicationsRoutes from "./routes/applications.routes.js";
 import healthRoutes from "./routes/health.routes.js";
 import ordersRoutes from "./routes/orders.routes.js";
+import notificationsRoutes from "./routes/notifications.routes.js";
 import restaurantRoutes from "./routes/restaurant.routes.js";
 import riderRoutes from "./routes/rider.routes.js";
 import restaurantsRoutes from "./routes/restaurants.routes.js";
@@ -60,8 +62,10 @@ app.get("/health", (_req, res) => {
 app.use("/api", healthRoutes);
 app.use("/api", restaurantsRoutes);
 app.use("/api", ordersRoutes);
+app.use("/api/notifications", notificationsRoutes);
 app.use("/api/restaurant", restaurantRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/applications", applicationsRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/rider", riderRoutes);
 

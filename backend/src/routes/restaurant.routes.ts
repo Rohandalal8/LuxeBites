@@ -111,6 +111,13 @@ router.post("/apply", requireAuth, requireCustomer, async (req, res, next) => {
       res.status(400).json({ success: false, message: "Complete restaurant application details are required.", code: "INVALID_APPLICATION" });
       return;
     }
+    const existing = await prisma.restaurantApplication.findFirst({
+      where: { applicantId: req.user!.id, status: { in: ["PENDING", "APPROVED"] } },
+    });
+    if (existing) {
+      res.status(409).json({ success: false, message: existing.status === "APPROVED" ? "Your restaurant owner application is already approved." : "You already have an application under review.", code: "APPLICATION_EXISTS" });
+      return;
+    }
     const application = await prisma.restaurantApplication.create({ data: { applicantId: req.user!.id, name, phone, email, address } });
     res.status(201).json({ success: true, data: application });
   } catch (error) {

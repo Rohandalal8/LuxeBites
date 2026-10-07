@@ -10,8 +10,8 @@ export default function LoginPage() { const router = useRouter(); const [email, 
      const token = await currentUser.getIdToken();
      localStorage.setItem("luxebites-token", token);
      await api("/auth/sync", { method: "POST", body: JSON.stringify({ name: currentUser.displayName, email: currentUser.email, phone: currentUser.phoneNumber, avatar: currentUser.photoURL }) });
-     const user = await api<{ role: string }>("/auth/me");
-     router.replace(user.role === "RIDER" ? "/dashboard" : "/unauthorized");
+     const user = await api<{ role: string; roles?: string[] }>("/auth/me");
+     router.replace((user.roles ?? [user.role]).includes("RIDER") ? "/dashboard" : "/unauthorized");
    } finally {
      finishing.current = false;
    }

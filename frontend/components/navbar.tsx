@@ -33,7 +33,11 @@ export function Navbar() {
           <Link href="/" className="transition hover:text-[#273b32]">Home</Link>
           <Link href="/restaurants" className="transition hover:text-[#273b32]">Discover</Link>
           {!loading && user ? (
-            <button type="button" onClick={handleLogout} className="transition hover:text-[#273b32]">Logout</button>
+            <>
+              <Link href="/settings" className="transition hover:text-[#273b32]">Settings</Link>
+              <Link href="/notifications" className="transition hover:text-[#273b32]">Notifications</Link>
+              <button type="button" onClick={handleLogout} className="transition hover:text-[#273b32]">Logout</button>
+            </>
           ) : (
             <Link href="/login" className="transition hover:text-[#273b32]">Login</Link>
           )}
@@ -62,7 +66,11 @@ export function Navbar() {
             <Link href="/restaurants" onClick={closeMenu} className="rounded-xl px-4 py-3 hover:bg-[#f2eee6] hover:text-[#273b32]">Discover</Link>
             <Link href="/cart" onClick={closeMenu} className="rounded-xl px-4 py-3 hover:bg-[#f2eee6] hover:text-[#273b32]">Cart</Link>
             {!loading && user ? (
-              <button type="button" onClick={handleLogout} className="rounded-xl px-4 py-3 text-left hover:bg-[#f2eee6] hover:text-[#273b32]">Logout</button>
+              <>
+                <Link href="/settings" onClick={closeMenu} className="rounded-xl px-4 py-3 hover:bg-[#f2eee6] hover:text-[#273b32]">Settings</Link>
+                <Link href="/notifications" onClick={closeMenu} className="rounded-xl px-4 py-3 hover:bg-[#f2eee6] hover:text-[#273b32]">Notifications</Link>
+                <button type="button" onClick={handleLogout} className="rounded-xl px-4 py-3 text-left hover:bg-[#f2eee6] hover:text-[#273b32]">Logout</button>
+              </>
             ) : (
               <Link href="/login" onClick={closeMenu} className="rounded-xl px-4 py-3 hover:bg-[#f2eee6] hover:text-[#273b32]">Login</Link>
             )}

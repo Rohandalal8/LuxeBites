@@ -21,8 +21,9 @@ async function getRider(userId: string) {
   const existing = await prisma.rider.findUnique({ where: { userId } });
   if (existing) return existing;
 
-  const application = await prisma.riderApplication.findUnique({
-    where: { applicantId: userId },
+  const application = await prisma.riderApplication.findFirst({
+    where: { applicantId: userId, status: "APPROVED" },
+    orderBy: { updatedAt: "desc" },
   });
   if (!application || application.status !== "APPROVED") return null;
 
@@ -57,11 +58,22 @@ router.post("/apply", requireAuth, requireCustomer, async (req, res, next) => {
       return;
     }
     const [vehicleNumber, licenseNumber, phone, address] = values;
-    const application = await prisma.riderApplication.upsert({
-      where: { applicantId: req.user!.id },
-      update: { vehicleType, vehicleNumber, licenseNumber, phone, address, status: "PENDING" },
-      create: { applicantId: req.user!.id, vehicleType, vehicleNumber, licenseNumber, phone, address },
+    const existingApplication = await prisma.riderApplication.findFirst({
+      where: { applicantId: req.user!.id, status: { in: ["PENDING", "APPROVED", "REJECTED"] } },
+      orderBy: { updatedAt: "desc" },
     });
+    if (existingApplication?.status === "APPROVED") {
+      res.status(409).json({ success: false, message: "Your rider application is already approved.", code: "APPLICATION_EXISTS" });
+      return;
+    }
+    const application = existingApplication
+      ? await prisma.riderApplication.update({
+          where: { id: existingApplication.id },
+          data: { vehicleType, vehicleNumber, licenseNumber, phone, address, status: "PENDING", rejectionReason: null, reviewedBy: null, reviewedAt: null },
+        })
+      : await prisma.riderApplication.create({
+          data: { applicantId: req.user!.id, vehicleType, vehicleNumber, licenseNumber, phone, address },
+        });
     res.status(201).json({ success: true, data: application });
   } catch (error) {
     next(error);

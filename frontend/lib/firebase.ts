@@ -1,5 +1,6 @@
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { GoogleAuthProvider, getAuth, signInWithPopup, signInWithRedirect, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from "firebase/auth";
+import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ?? "",
@@ -13,6 +14,7 @@ const firebaseConfig = {
 const hasFirebaseConfig = Object.values(firebaseConfig).every((value) => Boolean(value));
 
 export const auth = hasFirebaseConfig ? getAuth(getApps().length ? getApp() : initializeApp(firebaseConfig)) : null;
+export const storage = hasFirebaseConfig ? getStorage(getApps().length ? getApp() : initializeApp(firebaseConfig)) : null;
 export const googleProvider = hasFirebaseConfig ? new GoogleAuthProvider() : null;
 
 export async function signInWithEmail(email: string, password: string) {

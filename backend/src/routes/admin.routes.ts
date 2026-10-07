@@ -53,19 +53,48 @@ router.patch("/rider-applications/:id", requireAuth, requireAdmin, async (req, r
       res.status(400).json({ success: false, message: "Approval status is required.", code: "INVALID_STATUS" });
       return;
     }
+    const rejectionReason = typeof req.body?.rejectionReason === "string" ? req.body.rejectionReason.trim() : "";
+    if (status === ApplicationStatus.REJECTED && !rejectionReason) {
+      res.status(422).json({ success: false, message: "A rejection reason is required.", code: "REJECTION_REASON_REQUIRED" });
+      return;
+    }
     const applicationId = typeof req.params.id === "string" ? req.params.id : req.params.id[0];
     const result = await prisma.$transaction(async (transaction) => {
       const application = await transaction.riderApplication.findUnique({ where: { id: applicationId } });
       if (!application) return null;
-      await transaction.riderApplication.update({ where: { id: application.id }, data: { status } });
+      if (application.status !== ApplicationStatus.PENDING) throw new Error("APPLICATION_NOT_PENDING");
+      await transaction.riderApplication.update({
+        where: { id: application.id },
+        data: {
+          status,
+          rejectionReason: status === ApplicationStatus.REJECTED ? rejectionReason : null,
+          reviewedBy: req.user!.id,
+          reviewedAt: new Date(),
+        },
+      });
       if (status === ApplicationStatus.APPROVED) {
-        await transaction.user.update({ where: { id: application.applicantId }, data: { role: UserRole.RIDER } });
+        const applicant = await transaction.user.findUnique({ where: { id: application.applicantId }, select: { role: true } });
+        await transaction.userRoleAssignment.upsert({
+          where: { userId_role: { userId: application.applicantId, role: UserRole.RIDER } },
+          update: {},
+          create: { userId: application.applicantId, role: UserRole.RIDER },
+        });
+        if (applicant?.role === UserRole.CUSTOMER) {
+          await transaction.user.update({ where: { id: application.applicantId }, data: { role: UserRole.RIDER } });
+        }
         await transaction.rider.upsert({
           where: { userId: application.applicantId },
           update: { vehicleType: application.vehicleType, vehicleNumber: application.vehicleNumber, licenseNumber: application.licenseNumber },
           create: { userId: application.applicantId, vehicleType: application.vehicleType, vehicleNumber: application.vehicleNumber, licenseNumber: application.licenseNumber },
         });
       }
+      await transaction.notification.create({
+        data: {
+          userId: application.applicantId,
+          title: status === ApplicationStatus.APPROVED ? "Rider application approved" : "Rider application not approved",
+          message: status === ApplicationStatus.APPROVED ? "Your rider application has been approved." : `Your rider application was not approved. Reason: ${rejectionReason}`,
+        },
+      });
       return application;
     });
     if (!result) {
@@ -74,6 +103,10 @@ router.patch("/rider-applications/:id", requireAuth, requireAdmin, async (req, r
     }
     res.status(200).json({ success: true, data: result });
   } catch (error) {
+    if (error instanceof Error && error.message === "APPLICATION_NOT_PENDING") {
+      res.status(409).json({ success: false, message: "Only pending applications can be reviewed.", code: "APPLICATION_NOT_PENDING" });
+      return;
+    }
     next(error);
   }
 });
@@ -85,17 +118,65 @@ router.patch("/restaurant-applications/:id", requireAuth, requireAdmin, async (r
       res.status(400).json({ success: false, message: "Approval status is required.", code: "INVALID_STATUS" });
       return;
     }
+    const rejectionReason = typeof req.body?.rejectionReason === "string" ? req.body.rejectionReason.trim() : "";
+    if (status === ApplicationStatus.REJECTED && !rejectionReason) {
+      res.status(422).json({ success: false, message: "A rejection reason is required.", code: "REJECTION_REASON_REQUIRED" });
+      return;
+    }
     const applicationId = typeof req.params.id === "string" ? req.params.id : req.params.id[0];
     const result = await prisma.$transaction(async (transaction) => {
       const application = await transaction.restaurantApplication.findUnique({ where: { id: applicationId } });
       if (!application) return null;
-      const updated = await transaction.restaurantApplication.update({ where: { id: application.id }, data: { status } });
+      if (application.status !== ApplicationStatus.PENDING) throw new Error("APPLICATION_NOT_PENDING");
+      const updated = await transaction.restaurantApplication.update({
+        where: { id: application.id },
+        data: {
+          status,
+          rejectionReason: status === ApplicationStatus.REJECTED ? rejectionReason : null,
+          reviewedBy: req.user!.id,
+          reviewedAt: new Date(),
+        },
+      });
       if (status === ApplicationStatus.APPROVED) {
         const slug = `${application.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}-${application.id.slice(-6)}`;
-        const restaurant = await transaction.restaurant.create({ data: { ownerId: application.applicantId, name: application.name, slug, phone: application.phone, email: application.email, address: application.address } });
+        const applicant = await transaction.user.findUnique({ where: { id: application.applicantId }, select: { role: true } });
+        const restaurant = await transaction.restaurant.create({
+          data: {
+            ownerId: application.applicantId,
+            name: application.name,
+            slug,
+            description: application.restaurantDescription,
+            phone: application.phone,
+            email: application.email,
+            address: application.address,
+            city: application.city,
+            state: application.state,
+            pincode: application.pincode,
+            latitude: application.latitude,
+            longitude: application.longitude,
+            logo: application.logo,
+            coverImage: application.coverImage,
+            minimumOrder: application.minimumOrder ?? undefined,
+            deliveryTime: application.preparationTime ? `${application.preparationTime} min` : undefined,
+          },
+        });
         await transaction.restaurantApplication.update({ where: { id: application.id }, data: { restaurantId: restaurant.id } });
-        await transaction.user.update({ where: { id: application.applicantId }, data: { role: UserRole.RESTAURANT_OWNER } });
+        await transaction.userRoleAssignment.upsert({
+          where: { userId_role: { userId: application.applicantId, role: UserRole.RESTAURANT_OWNER } },
+          update: {},
+          create: { userId: application.applicantId, role: UserRole.RESTAURANT_OWNER },
+        });
+        if (applicant?.role === UserRole.CUSTOMER) {
+          await transaction.user.update({ where: { id: application.applicantId }, data: { role: UserRole.RESTAURANT_OWNER } });
+        }
       }
+      await transaction.notification.create({
+        data: {
+          userId: application.applicantId,
+          title: status === ApplicationStatus.APPROVED ? "Restaurant owner application approved" : "Restaurant owner application not approved",
+          message: status === ApplicationStatus.APPROVED ? "Your restaurant owner application has been approved." : `Your application was not approved. Reason: ${rejectionReason}`,
+        },
+      });
       return updated;
     });
     if (!result) {
@@ -104,6 +185,10 @@ router.patch("/restaurant-applications/:id", requireAuth, requireAdmin, async (r
     }
     res.status(200).json({ success: true, data: result });
   } catch (error) {
+    if (error instanceof Error && error.message === "APPLICATION_NOT_PENDING") {
+      res.status(409).json({ success: false, message: "Only pending applications can be reviewed.", code: "APPLICATION_NOT_PENDING" });
+      return;
+    }
     next(error);
   }
 });

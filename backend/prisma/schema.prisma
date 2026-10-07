@@ -73,70 +73,86 @@ enum ApplicationStatus {
 }
 
 model User {
-  id         String   @id @default(cuid())
-  firebaseUid String? @unique
-  name       String?
-  email      String?  @unique
-  phone      String?
-  avatar     String?
-  role       UserRole @default(CUSTOMER)
-  status     UserStatus @default(ACTIVE)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id          String     @id @default(cuid())
+  firebaseUid String?    @unique
+  name        String?
+  email       String?    @unique
+  phone       String?
+  avatar      String?
+  role        UserRole   @default(CUSTOMER)
+  status      UserStatus @default(ACTIVE)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
-  restaurants Restaurant[]
-  addresses   Address[]
-  carts       Cart[]
-  orders      Order[]
-  reviews     Review[]
-  favorites   Favorite[]
-  couponsUsed CouponUsage[]
-  notifications Notification[]
-  rider        Rider?
-  restaurantApplications RestaurantApplication[]
-  riderApplication RiderApplication?
+  restaurants                    Restaurant[]
+  addresses                      Address[]
+  carts                          Cart[]
+  orders                         Order[]
+  reviews                        Review[]
+  favorites                      Favorite[]
+  couponsUsed                    CouponUsage[]
+  notifications                  Notification[]
+  rider                          Rider?
+  restaurantApplications         RestaurantApplication[]
+  riderApplications              RiderApplication[]
+  roleAssignments                UserRoleAssignment[]
+  reviewedRestaurantApplications RestaurantApplication[] @relation("RestaurantApplicationReviewer")
+  reviewedRiderApplications      RiderApplication[]      @relation("RiderApplicationReviewer")
 
   @@index([firebaseUid])
   @@index([email])
 }
 
-model Restaurant {
-  id             String            @id @default(cuid())
-  name           String
-  ownerId        String
-  slug           String            @unique
-  description    String?
-  phone          String?
-  email          String?
-  address        String?
-  city           String?
-  state          String?
-  pincode        String?
-  latitude       Float?
-  longitude      Float?
-  logo           String?
-  coverImage     String?
-  rating         Float             @default(0)
-  reviewCount    Int               @default(0)
-  deliveryTime   String?
-  minimumOrder   Float             @default(0)
-  isOpen         Boolean           @default(true)
-  isActive       Boolean           @default(true)
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+model UserRoleAssignment {
+  id        String   @id @default(cuid())
+  userId    String
+  role      UserRole
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  owner          User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  images         RestaurantImage[]
-  hours          RestaurantHour[]
-  cuisines       RestaurantCuisine[]
-  categories     MenuCategory[]
-  menuItems      MenuItem[]
-  favoriteBy     Favorite[]
-  reviews        Review[]
-  orders         Order[]
-  notifications  Notification[]
-  payouts        RestaurantPayout[]
-  application    RestaurantApplication?
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role])
+  @@index([role])
+}
+
+model Restaurant {
+  id           String   @id @default(cuid())
+  name         String
+  ownerId      String
+  slug         String   @unique
+  description  String?
+  phone        String?
+  email        String?
+  address      String?
+  city         String?
+  state        String?
+  pincode      String?
+  latitude     Float?
+  longitude    Float?
+  logo         String?
+  coverImage   String?
+  rating       Float    @default(0)
+  reviewCount  Int      @default(0)
+  deliveryTime String?
+  minimumOrder Float    @default(0)
+  isOpen       Boolean  @default(true)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  owner         User                   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  images        RestaurantImage[]
+  hours         RestaurantHour[]
+  cuisines      RestaurantCuisine[]
+  categories    MenuCategory[]
+  menuItems     MenuItem[]
+  favoriteBy    Favorite[]
+  reviews       Review[]
+  orders        Order[]
+  notifications Notification[]
+  payouts       RestaurantPayout[]
+  application   RestaurantApplication?
 
   @@index([ownerId])
   @@index([city])
@@ -144,11 +160,11 @@ model Restaurant {
 }
 
 model RestaurantImage {
-  id                String   @id @default(cuid())
-  restaurantId      String
-  imageUrl          String
+  id                 String   @id @default(cuid())
+  restaurantId       String
+  imageUrl           String
   cloudinaryPublicId String?
-  createdAt         DateTime @default(now())
+  createdAt          DateTime @default(now())
 
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 
@@ -156,12 +172,12 @@ model RestaurantImage {
 }
 
 model RestaurantHour {
-  id          String    @id @default(cuid())
+  id           String    @id @default(cuid())
   restaurantId String
-  dayOfWeek   DayOfWeek
-  openTime    String?
-  closeTime   String?
-  isClosed    Boolean   @default(false)
+  dayOfWeek    DayOfWeek
+  openTime     String?
+  closeTime    String?
+  isClosed     Boolean   @default(false)
 
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 
@@ -178,12 +194,12 @@ model Cuisine {
 }
 
 model RestaurantCuisine {
-  id          String @id @default(cuid())
+  id           String @id @default(cuid())
   restaurantId String
-  cuisineId   String
+  cuisineId    String
 
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
-  cuisine     Cuisine     @relation(fields: [cuisineId], references: [id], onDelete: Cascade)
+  cuisine    Cuisine    @relation(fields: [cuisineId], references: [id], onDelete: Cascade)
 
   @@unique([restaurantId, cuisineId])
   @@index([restaurantId])
@@ -191,10 +207,10 @@ model RestaurantCuisine {
 }
 
 model MenuCategory {
-  id          String @id @default(cuid())
+  id           String  @id @default(cuid())
   restaurantId String
-  name        String
-  description String?
+  name         String
+  description  String?
   displayOrder Int
 
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
@@ -205,24 +221,24 @@ model MenuCategory {
 }
 
 model MenuItem {
-  id              String   @id @default(cuid())
-  restaurantId    String
-  categoryId      String
-  name            String
-  description     String?
-  price           Float
-  discountPrice   Float?
-  image           String?
+  id                 String   @id @default(cuid())
+  restaurantId       String
+  categoryId         String
+  name               String
+  description        String?
+  price              Float
+  discountPrice      Float?
+  image              String?
   cloudinaryPublicId String?
-  isVeg           Boolean @default(true)
-  isAvailable     Boolean @default(true)
-  rating          Float   @default(0)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  isVeg              Boolean  @default(true)
+  isAvailable        Boolean  @default(true)
+  rating             Float    @default(0)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  restaurant Restaurant   @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
   category   MenuCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  cartItems CartItem[]
+  cartItems  CartItem[]
   orderItems OrderItem[]
 
   @@index([restaurantId])
@@ -243,34 +259,34 @@ model Address {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   orders Order[]
 
   @@index([userId])
 }
 
 model Cart {
-  id        String     @id @default(cuid())
-  userId    String
+  id           String   @id @default(cuid())
+  userId       String
   restaurantId String?
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   items CartItem[]
 
   @@index([userId])
 }
 
 model CartItem {
-  id        String @id @default(cuid())
-  cartId    String
+  id         String   @id @default(cuid())
+  cartId     String
   menuItemId String
-  quantity  Int
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  quantity   Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  cart Cart @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  cart     Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
   menuItem MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
 
   @@unique([cartId, menuItemId])
@@ -278,27 +294,27 @@ model CartItem {
 }
 
 model Order {
-  id          String      @id @default(cuid())
-  userId      String
-  restaurantId String
-  addressId   String?
-  subtotal    Float
-  deliveryFee Float      @default(0)
-  tax         Float      @default(0)
-  discount    Float      @default(0)
-  total       Float
-  status      OrderStatus @default(PLACED)
+  id            String        @id @default(cuid())
+  userId        String
+  restaurantId  String
+  addressId     String?
+  subtotal      Float
+  deliveryFee   Float         @default(0)
+  tax           Float         @default(0)
+  discount      Float         @default(0)
+  total         Float
+  status        OrderStatus   @default(PLACED)
   paymentStatus PaymentStatus @default(PENDING)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
-  address Address? @relation(fields: [addressId], references: [id], onDelete: SetNull)
-  items OrderItem[]
-  payment Payment?
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  restaurant    Restaurant     @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  address       Address?       @relation(fields: [addressId], references: [id], onDelete: SetNull)
+  items         OrderItem[]
+  payment       Payment?
   notifications Notification[]
-  deliveryTask DeliveryTask?
+  deliveryTask  DeliveryTask?
 
   @@index([userId])
   @@index([restaurantId])
@@ -306,32 +322,32 @@ model Order {
 }
 
 model OrderItem {
-  id        String @id @default(cuid())
-  orderId   String
+  id         String @id @default(cuid())
+  orderId    String
   menuItemId String
-  name      String
-  price     Float
-  quantity  Int
-  subtotal  Float
+  name       String
+  price      Float
+  quantity   Int
+  subtotal   Float
 
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   menuItem MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Restrict)
 
   @@index([orderId])
 }
 
 model Payment {
-  id              String   @id @default(cuid())
-  orderId         String   @unique
-  razorpayOrderId String?
+  id                String        @id @default(cuid())
+  orderId           String        @unique
+  razorpayOrderId   String?
   razorpayPaymentId String?
   razorpaySignature String?
-  amount          Float
-  currency        String   @default("INR")
-  status          PaymentStatus @default(PENDING)
-  webhookVerified Boolean   @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  amount            Float
+  currency          String        @default("INR")
+  status            PaymentStatus @default(PENDING)
+  webhookVerified   Boolean       @default(false)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
@@ -362,21 +378,21 @@ model Rider {
 }
 
 model DeliveryTask {
-  id               String             @id @default(cuid())
-  orderId          String             @unique
-  riderId          String?
-  status           DeliveryTaskStatus @default(SEARCHING_RIDER)
-  pickupLatitude   Float?
-  pickupLongitude  Float?
-  deliveryLatitude Float?
+  id                String             @id @default(cuid())
+  orderId           String             @unique
+  riderId           String?
+  status            DeliveryTaskStatus @default(SEARCHING_RIDER)
+  pickupLatitude    Float?
+  pickupLongitude   Float?
+  deliveryLatitude  Float?
   deliveryLongitude Float?
-  assignedAt       DateTime?
-  pickedUpAt       DateTime?
-  deliveredAt      DateTime?
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
+  assignedAt        DateTime?
+  pickedUpAt        DateTime?
+  deliveredAt       DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
 
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
   rider Rider? @relation(fields: [riderId], references: [id], onDelete: SetNull)
 
   @@index([riderId, status])
@@ -409,52 +425,89 @@ model RiderEarning {
 }
 
 model RestaurantApplication {
-  id           String            @id @default(cuid())
-  applicantId  String
-  restaurantId String?           @unique
-  name         String
-  phone        String
-  email        String
-  address      String
-  status       ApplicationStatus @default(PENDING)
-  notes        String?
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
+  id                    String            @id @default(cuid())
+  applicantId           String
+  restaurantId          String?           @unique
+  name                  String
+  phone                 String
+  email                 String
+  address               String
+  restaurantDescription String?
+  city                  String?
+  state                 String?
+  pincode               String?
+  cuisine               String?
+  latitude              Float?
+  longitude             Float?
+  openingTime           String?
+  closingTime           String?
+  restaurantType        String?
+  preparationTime       Int?
+  minimumOrder          Float?
+  logo                  String?
+  coverImage            String?
+  businessDocuments     Json?
+  status                ApplicationStatus @default(PENDING)
+  notes                 String?
+  rejectionReason       String?
+  reviewedBy            String?
+  reviewedAt            DateTime?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
 
-  applicant User        @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  applicant  User        @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  reviewer   User?       @relation("RestaurantApplicationReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
   restaurant Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: SetNull)
 
   @@index([applicantId, status])
+  @@index([reviewedBy])
 }
 
 model RiderApplication {
-  id            String            @id @default(cuid())
-  applicantId   String            @unique
-  vehicleType   VehicleType
-  vehicleNumber String
-  licenseNumber String
-  phone         String
-  address       String
-  status        ApplicationStatus @default(PENDING)
-  notes         String?
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
+  id                  String            @id @default(cuid())
+  applicantId         String
+  fullName            String?
+  email               String?
+  vehicleType         VehicleType
+  vehicleNumber       String
+  licenseNumber       String
+  vehicleBrand        String?
+  vehicleModel        String?
+  phone               String
+  address             String
+  city                String?
+  state               String?
+  pincode             String?
+  drivingLicense      String?
+  vehicleRegistration String?
+  identityDocument    String?
+  profileImage        String?
+  status              ApplicationStatus @default(PENDING)
+  notes               String?
+  rejectionReason     String?
+  reviewedBy          String?
+  reviewedAt          DateTime?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
 
-  applicant User @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  applicant User  @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  reviewer  User? @relation("RiderApplicationReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
 
+  @@index([applicantId, status])
   @@index([status])
+  @@index([reviewedBy])
 }
 
 model Review {
-  id          String   @id @default(cuid())
-  userId      String
+  id           String   @id @default(cuid())
+  userId       String
   restaurantId String
-  rating      Int
-  comment     String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  rating       Int
+  comment      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 
   @@unique([userId, restaurantId])
@@ -462,12 +515,12 @@ model Review {
 }
 
 model Favorite {
-  id          String @id @default(cuid())
-  userId      String
+  id           String   @id @default(cuid())
+  userId       String
   restaurantId String
-  createdAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   restaurant Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
 
   @@unique([userId, restaurantId])
@@ -475,49 +528,49 @@ model Favorite {
 }
 
 model Coupon {
-  id            String   @id @default(cuid())
-  code          String   @unique
-  discountType  CouponDiscountType
-  discountValue Float
-  minimumOrder  Float    @default(0)
-  maximumDiscount Float? 
-  usageLimit    Int?
-  usedCount     Int      @default(0)
-  expiresAt     DateTime?
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id              String             @id @default(cuid())
+  code            String             @unique
+  discountType    CouponDiscountType
+  discountValue   Float
+  minimumOrder    Float              @default(0)
+  maximumDiscount Float?
+  usageLimit      Int?
+  usedCount       Int                @default(0)
+  expiresAt       DateTime?
+  isActive        Boolean            @default(true)
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
 
   usages CouponUsage[]
 }
 
 model CouponUsage {
-  id        String   @id @default(cuid())
-  couponId  String
-  userId    String
-  orderId   String?
-  usedAt    DateTime @default(now())
+  id       String   @id @default(cuid())
+  couponId String
+  userId   String
+  orderId  String?
+  usedAt   DateTime @default(now())
 
   coupon Coupon @relation(fields: [couponId], references: [id], onDelete: Cascade)
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([couponId])
   @@index([userId])
 }
 
 model Notification {
-  id          String   @id @default(cuid())
-  userId      String?
+  id           String   @id @default(cuid())
+  userId       String?
   restaurantId String?
-  orderId     String?
-  title       String
-  message     String
-  isRead      Boolean  @default(false)
-  createdAt   DateTime @default(now())
+  orderId      String?
+  title        String
+  message      String
+  isRead       Boolean  @default(false)
+  createdAt    DateTime @default(now())
 
-  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
   restaurant Restaurant? @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
-  order Order? @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order      Order?      @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([restaurantId])

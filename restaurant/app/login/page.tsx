@@ -32,15 +32,16 @@ export default function LoginPage() {
 
   const finishAuthentication = async (firebaseUser: { getIdToken: () => Promise<string>; displayName: string | null; email: string | null; photoURL: string | null }) => {
     const token = await firebaseUser.getIdToken();
-    const profile = await apiFetch<{ role: string; status: string }>("/auth/sync", token, {
+    const profile = await apiFetch<{ role: string; roles?: string[]; status: string }>("/auth/sync", token, {
       method: "POST",
       body: JSON.stringify({ name: firebaseUser.displayName, email: firebaseUser.email, avatar: firebaseUser.photoURL }),
     });
-    if (profile.role !== "RESTAURANT_OWNER" && profile.role !== "CUSTOMER") {
+    const roles = profile.roles ?? [profile.role];
+    if (!roles.includes("RESTAURANT_OWNER") && !roles.includes("CUSTOMER")) {
       await signOut(auth);
       throw new Error("This Firebase account is not eligible for the restaurant owner application.");
     }
-    router.push(profile.role === "RESTAURANT_OWNER" && profile.status === "ACTIVE" ? "/" : "/onboarding");
+    router.push(roles.includes("RESTAURANT_OWNER") && profile.status === "ACTIVE" ? "/" : "/onboarding");
   };
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {

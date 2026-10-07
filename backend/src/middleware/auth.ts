@@ -65,8 +65,8 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 }
 
 export function requireRole(...roles: UserRole[]) {
-  return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.user || !roles.includes(req.user.role)) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
       return res.status(403).json({
         success: false,
         message: "You do not have permission to perform this action.",
@@ -74,7 +74,23 @@ export function requireRole(...roles: UserRole[]) {
       });
     }
 
-    return next();
+    try {
+      if (roles.includes(req.user.role)) return next();
+
+      const assignments = await prisma.userRoleAssignment.findMany({
+        where: { userId: req.user.id, role: { in: roles } },
+        select: { role: true },
+      });
+      if (assignments.length > 0) return next();
+
+      return res.status(403).json({
+        success: false,
+        message: "You do not have permission to perform this action.",
+        code: "FORBIDDEN",
+      });
+    } catch (error) {
+      return next(error);
+    }
   };
 }
 

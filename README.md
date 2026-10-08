@@ -44,6 +44,12 @@ CLIENT_URL="http://localhost:3001"
 NODE_ENV="development"
 ```
 
+For Supabase, copy the session pooler URL from **Project Settings > Database**.
+Use the `*.pooler.supabase.com:5432` host instead of the direct
+`db.<project-ref>.supabase.co:5432` host when the local network does not support
+IPv6. The pooler username includes the project reference:
+`postgres.<project-ref>`.
+
 Start the applications:
 
 ```bash

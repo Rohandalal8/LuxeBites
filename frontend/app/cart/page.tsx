@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { CartProvider, useCart } from "@/contexts/cart-context";
+import { useCart } from "@/contexts/cart-context";
 
 function CartPageContent() {
   const { items, subtotal, deliveryFee, total, updateQuantity, removeItem, clearCart } = useCart();
@@ -93,10 +93,4 @@ function CartPageContent() {
   );
 }
 
-export default function CartPage() {
-  return (
-    <CartProvider>
-      <CartPageContent />
-    </CartProvider>
-  );
-}
+export default CartPageContent;

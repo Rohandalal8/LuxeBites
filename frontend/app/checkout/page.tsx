@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 
-import { CartProvider, useCart } from "@/contexts/cart-context";
+import { useCart } from "@/contexts/cart-context";
 import { useAuth } from "@/contexts/auth-context";
 
 function CheckoutPageContent() {
@@ -134,10 +134,4 @@ function CheckoutPageContent() {
   );
 }
 
-export default function CheckoutPage() {
-  return (
-    <CartProvider>
-      <CheckoutPageContent />
-    </CartProvider>
-  );
-}
+export default CheckoutPageContent;

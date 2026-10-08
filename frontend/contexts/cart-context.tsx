@@ -23,7 +23,10 @@ type CartContextValue = {
   subtotal: number;
   deliveryFee: number;
   total: number;
+  isCartOpen: boolean;
   addItem: (item: AddCartItemInput) => void;
+  openCart: () => void;
+  closeCart: () => void;
   updateQuantity: (id: string, quantity: number) => void;
   removeItem: (id: string) => void;
   clearCart: () => void;
@@ -33,23 +36,29 @@ const CART_STORAGE_KEY = "luxe-bites-cart";
 const CartContext = createContext<CartContextValue | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>(() => {
-    if (typeof window === "undefined") return [];
-
-    const storedCart = window.localStorage.getItem(CART_STORAGE_KEY);
-    if (!storedCart) return [];
-
-    try {
-      return JSON.parse(storedCart) as CartItem[];
-    } catch (error) {
-      console.error("Failed to restore cart:", error);
-      return [];
-    }
-  });
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [hasLoadedStoredCart, setHasLoadedStoredCart] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   useEffect(() => {
+    const storedCart = window.localStorage.getItem(CART_STORAGE_KEY);
+
+    if (storedCart) {
+      try {
+        setItems(JSON.parse(storedCart) as CartItem[]);
+      } catch (error) {
+        console.error("Failed to restore cart:", error);
+      }
+    }
+
+    setHasLoadedStoredCart(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoadedStoredCart) return;
+
     window.localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
-  }, [items]);
+  }, [hasLoadedStoredCart, items]);
 
   const addItem = (item: AddCartItemInput) => {
     setItems((currentItems) => {
@@ -71,7 +80,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         },
       ];
     });
+    setIsCartOpen(true);
   };
+
+  const openCart = () => setIsCartOpen(true);
+  const closeCart = () => setIsCartOpen(false);
 
   const updateQuantity = (id: string, quantity: number) => {
     setItems((currentItems) =>
@@ -100,12 +113,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       subtotal,
       deliveryFee,
       total: subtotal + deliveryFee,
+      isCartOpen,
       addItem,
+      openCart,
+      closeCart,
       updateQuantity,
       removeItem,
       clearCart,
     }),
-    [items, itemCount, subtotal, deliveryFee],
+    [items, itemCount, subtotal, deliveryFee, isCartOpen],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

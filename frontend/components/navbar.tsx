@@ -3,14 +3,16 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Menu, X } from "lucide-react";
+import { Menu, ShoppingBag, X } from "lucide-react";
 
 import { useAuth } from "@/contexts/auth-context";
+import { useCart } from "@/contexts/cart-context";
 import { logout } from "@/lib/firebase";
 
 export function Navbar() {
   const router = useRouter();
   const { user, loading } = useAuth();
+  const { itemCount, openCart } = useCart();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const closeMenu = () => setIsMenuOpen(false);
@@ -23,13 +25,13 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-[#e8e0d4] bg-[#fffdf9]/95 backdrop-blur-md">
-      <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-5 px-5 py-4 sm:px-8 lg:px-12">
+      <div className="mx-auto flex max-w-[1200px] items-center justify-between gap-5 px-5 py-3.5 sm:px-8 lg:px-12">
         <Link href="/" className="flex shrink-0 items-center gap-3 text-sm font-bold tracking-[0.16em] text-[#273b32] uppercase">
-          <img src="/luxe-bites-admin-mark.svg" alt="" className="h-10 w-10 rounded-xl" />
+          <img src="/luxe-bites-admin-mark.svg" alt="" className="h-9 w-9 rounded-xl" />
           <span className="hidden sm:inline">LuxeBites</span>
         </Link>
 
-        <nav className="hidden items-center gap-8 text-sm font-semibold text-[#81786c] md:flex" aria-label="Main navigation">
+        <nav className="hidden items-center gap-7 text-sm font-semibold text-[#81786c] md:flex" aria-label="Main navigation">
           <Link href="/" className="transition hover:text-[#273b32]">Home</Link>
           <Link href="/restaurants" className="transition hover:text-[#273b32]">Discover</Link>
           {!loading && user ? (
@@ -44,9 +46,11 @@ export function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <Link href="/cart" className="hidden rounded-full bg-[#273b32] px-5 py-2.5 text-sm font-semibold text-[#fffaf1] transition hover:bg-[#1f2d26] sm:inline-flex">
-            Cart
-          </Link>
+          <button type="button" onClick={openCart} className="relative inline-flex h-10 items-center gap-2 rounded-full bg-[#273b32] px-4 text-sm font-semibold text-[#fffaf1] transition hover:bg-[#1f2d26]" aria-label={`Open cart${itemCount ? ` with ${itemCount} items` : ""}`}>
+            <ShoppingBag size={17} aria-hidden="true" />
+            <span className="hidden sm:inline">Cart</span>
+            {itemCount > 0 ? <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-[#d97732] px-1 text-[10px] font-bold">{itemCount}</span> : null}
+          </button>
           <button
             type="button"
             className="flex h-10 w-10 items-center justify-center rounded-full border border-[#ded7cb] text-[#273b32] md:hidden"
@@ -64,7 +68,7 @@ export function Navbar() {
           <nav className="flex flex-col gap-1 text-sm font-semibold text-[#81786c]" aria-label="Mobile navigation">
             <Link href="/" onClick={closeMenu} className="rounded-xl px-4 py-3 hover:bg-[#f2eee6] hover:text-[#273b32]">Home</Link>
             <Link href="/restaurants" onClick={closeMenu} className="rounded-xl px-4 py-3 hover:bg-[#f2eee6] hover:text-[#273b32]">Discover</Link>
-            <Link href="/cart" onClick={closeMenu} className="rounded-xl px-4 py-3 hover:bg-[#f2eee6] hover:text-[#273b32]">Cart</Link>
+            <button type="button" onClick={() => { closeMenu(); openCart(); }} className="rounded-xl px-4 py-3 text-left hover:bg-[#f2eee6] hover:text-[#273b32]">Cart {itemCount > 0 ? `(${itemCount})` : ""}</button>
             {!loading && user ? (
               <>
                 <Link href="/settings" onClick={closeMenu} className="rounded-xl px-4 py-3 hover:bg-[#f2eee6] hover:text-[#273b32]">Settings</Link>

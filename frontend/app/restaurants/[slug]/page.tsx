@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { use, useEffect, useMemo, useState } from "react";
 
-import { CartProvider, useCart } from "@/contexts/cart-context";
+import { useCart } from "@/contexts/cart-context";
 import { fetchRestaurant, type RestaurantDetails } from "@/lib/restaurants";
 
 function RestaurantDetailPageContent({ params }: { params: Promise<{ slug: string }> }) {
@@ -195,9 +195,5 @@ function RestaurantDetailPageContent({ params }: { params: Promise<{ slug: strin
 }
 
 export default function RestaurantDetailPage({ params }: { params: Promise<{ slug: string }> }) {
-  return (
-    <CartProvider>
-      <RestaurantDetailPageContent params={params} />
-    </CartProvider>
-  );
+  return <RestaurantDetailPageContent params={params} />;
 }
